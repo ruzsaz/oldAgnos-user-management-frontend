@@ -1,52 +1,36 @@
+import { Container, Row, Col, Form } from "react-bootstrap";
 import React from 'react';
 
-function SelectableList({src, current}) {
+function SelectableList({ src, getSelected, setSelected, disabled }) {
 
-    const [ready, setReady] = React.useState(false);
-    const [list, setList] = React.useState([]);
-
-    React.useEffect(() => {
-
-        async function fetchData() {
-            try {
-                const response = await fetch(src);
-                if (response.ok) {
-                    const body = await response.json();
-                    setList(body)
-                } else {
-                    console.error(src + ' not found.')
-                }
-            } catch (error) {
-                console.error(error);
-            }
-            setReady(true);
+    function handleChange(event) {
+        const element = event.target.value;
+        if (event.target.checked) {
+            setSelected([...getSelected(), element]);
+        } else {
+            setSelected(getSelected().filter(e => e !== element));
         }
-        if (!ready) {
-            fetchData();
-        }
-
-    });
-
-    if (!ready) {
-        return (
-            <p>Loading...</p>
-        )
     }
 
     return (
-        <div className="list">
-            {list.map(group =>
-                <div key={group.name}>
-                    <input
-                        className="selectableList"
-                        type="checkbox"
-                        name={group.name} 
-                        value={group.name}
-                        defaultChecked={current.some(e => e === group.name)} />
-                    <label>{group.name}</label>
-                </div>
-            )}
-        </div>
+
+        <Container>
+            <Row xs lg={4}>
+                {src.map(group =>
+                    <Col key={group.name}>
+                        <Form.Check
+                            id={"groupElement_" + group.name}
+                            type="checkbox"                            
+                            value={group.name}
+                            label={group.name}
+                            defaultChecked={getSelected().some(e => e === group.name)}
+                            onChange={handleChange}
+                            disabled={disabled} />
+                    </Col>
+                )}
+            </Row>
+        </Container>
+
     )
 }
 

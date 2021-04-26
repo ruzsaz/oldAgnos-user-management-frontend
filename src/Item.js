@@ -1,19 +1,13 @@
-import './Item.css'
+import styles from './Item.module.scss'
 
-function Item({ name, value, reference, showModal }) {
+function Item({ name, value, showModal }) {
 
     return (
-        <div className="tableRow" ref={reference} onClick={showModal}>
-            <div className="tableItem">
-                {name}                
-            </div>
-            <div className="tableItem">
-                {value}                                
-            </div>            
-        </div>
-
+        <tr onClick={showModal} className={styles.item}>
+            <td className={styles.firstCell}>{name}</td>
+            <td>{value}</td>
+        </tr>
     )
-
 }
 
 export default Item;

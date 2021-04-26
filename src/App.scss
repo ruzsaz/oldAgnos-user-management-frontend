@@ -1,0 +1,34 @@
+.App {
+  text-align: center;
+}
+
+.card {
+  margin-top: 6ex;
+}
+
+$placeholderOpacity: 0.3;
+
+::placeholder {
+    opacity: $placeholderOpacity !important;
+}
+
+::-webkit-input-placeholder {
+    opacity: $placeholderOpacity !important;
+}
+
+::-moz-placeholder {
+    opacity: $placeholderOpacity !important;
+}
+
+:-ms-input-placeholder {
+    opacity: $placeholderOpacity !important;
+}
+
+:-moz-placeholder {
+    opacity: $placeholderOpacity !important;
+}
+
+
+
+
+$myColor: rgb(255, 255, 255);

@@ -1,58 +1,138 @@
-import './App.css';
-import React from "react";
-import Panel from './Panel'
-import { useHistory } from "react-router-dom";
+import './App.scss';
+import React, { useState, useEffect, Fragment } from "react";
+import URList from './URList';
+import { Modal, Card } from "react-bootstrap";
+import UserForm from './Forms/UserForm';
+import RoleForm from './Forms/RoleForm';
+
+
 
 function App() {
 
-  const update = true;
-  let history = useHistory();
+    const [reloadIfChanged, setReloadRequired] = useState(true);
+    const [userList, setUserList] = useState(undefined);
+    const [roleList, setRoleList] = useState(undefined);
+    const [selectedUser, setSelectedUser] = useState(undefined);
+    const [selectedRole, setSelectedRole] = useState(undefined);
 
-  async function handleSubmit(userObject, oldName) {    
+    const userSrc = "/aums/users";
+    const emptyUser = {
+        "name": "",
+        "email": "",
+        "realName": "",
+        "plainPassword": "",
+        "permanent": false,
+        "roles": []
+    }
+    const emptyRole = {
+        "name": "",
+        "description": "",
+        "permanent": false,
+        "users": []
+    }
 
-    try {
-    await fetch('/aums/user' + (update ? '/' + oldName : ''), {
-      method: (update) ? 'PUT' : 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(userObject),
-    })
-  } catch (error) {
-    console.log("error at saving")
-  }
-    //.then(response => { alert(response); return response.json(); });
-    console.log(history);
-    history.push('/index.js');
-  }
 
-  function onUserEditSubmit(event) {
-    console.log('ffff')
-    event.preventDefault(event);
-    const user = {};
-    const oldName = event.target.oldName.value;
-    user.name = event.target.name.value;
-    user.email = event.target.email.value;
-    user.realName = event.target.realName.value;
-    user.plainPassword = event.target.password.value;
-    user.permanent = false;
-    console.log(event.target);
-    const options = Array.from(event.target.getElementsByClassName('selectableList'));    
-    user.roles = options.filter(a => a.checked).map(a => a.name);
-    console.log(oldName, user, user.name)
-    handleSubmit(user, oldName);
-  };
+    const roleSrc = "/aums/roles";
 
-  return (
-    <div className="App">
 
-      <Panel title="Users" src='/aums/users' onSubmit={onUserEditSubmit}>
+    function handleCloseModal(forceReload) {
+        setSelectedUser(undefined);
+        setSelectedRole(undefined);
+        if (forceReload) {
+            requestReload();
+        }
+    };
 
-      </Panel>
+    function onUserClick(user) {
+        setSelectedUser(user);
+    }
 
-    </div>
-  );
+    function onRoleClick(role) {
+        setSelectedRole(role);
+    }
+
+    function requestReload() {
+        setReloadRequired(!reloadIfChanged);
+    }
+
+    // User, Groups download and sort function
+    async function fetchData(src, setResult, comparision) {
+        try {
+            const response = await fetch(src);
+            if (response.ok) {
+                const body = await response.json();
+                if (comparision) {
+                    body.sort(comparision);
+                }
+                setResult(body)
+            } else {
+                console.error(src + ' not found.')
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // Load users' data
+    useEffect(() => {
+        fetchData(userSrc, setUserList, (a, b) => (a.name > b.name) ? 1 : -1);
+    }, [userSrc, reloadIfChanged]);
+
+    // Load roles' data
+    useEffect(() => {
+        fetchData(roleSrc, setRoleList, (a, b) => (a.name > b.name) ? 1 : -1);
+    }, [roleSrc, reloadIfChanged]);
+
+    // Loading... message before data arrived
+    if (userList === undefined || roleList === undefined) {
+        return (
+            <p>Loading...</p>
+        )
+    }
+
+    return (
+        <Fragment>
+
+            <div className="App">
+
+                <Card>
+                    <Card.Header>Users</Card.Header>
+                    <Card.Body>
+                        <URList data={userList} valListAccessor="roles" onElementClick={onUserClick} />
+                        <Card.Link href="#" onClick={() => { onUserClick(emptyUser) }}>Add new user</Card.Link>
+                    </Card.Body>
+                </Card>
+
+                <Card>
+                    <Card.Header>Roles</Card.Header>
+                    <Card.Body>
+                    <URList data={roleList} valListAccessor="users" onElementClick={onRoleClick} />
+                        <Card.Link href="#" onClick={() => { onRoleClick(emptyRole) }}>Add new role</Card.Link>
+                    </Card.Body>
+                </Card>
+
+            </div>
+
+            <Modal animation={false} backdrop="static" size="lg" keyboard="false" show={selectedUser !== undefined} onHide={handleCloseModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{(selectedUser && selectedUser.name) ? 'Modify user ' + selectedUser.name : 'Create new user'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <UserForm content={selectedUser} roles={roleList} onClose={handleCloseModal} />
+                </Modal.Body>
+            </Modal>
+
+            <Modal animation={false} backdrop="static" size="lg" keyboard="false" show={selectedRole !== undefined} onHide={handleCloseModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{(selectedRole && selectedRole.name) ? 'Modify role ' + selectedRole.name : 'Create new role'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <RoleForm content={selectedRole} users={userList} onClose={handleCloseModal} />
+                </Modal.Body>
+            </Modal>
+
+        </Fragment>
+    );
 }
 
 export default App;

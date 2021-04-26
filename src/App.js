@@ -4,18 +4,19 @@ import URList from './URList';
 import { Modal, Card } from "react-bootstrap";
 import UserForm from './Forms/UserForm';
 import RoleForm from './Forms/RoleForm';
-
+import Login from './login';
 
 
 function App() {
 
+    const [token, setToken] = useState(undefined);
     const [reloadIfChanged, setReloadRequired] = useState(true);
     const [userList, setUserList] = useState(undefined);
     const [roleList, setRoleList] = useState(undefined);
     const [selectedUser, setSelectedUser] = useState(undefined);
     const [selectedRole, setSelectedRole] = useState(undefined);
 
-    const userSrc = "/aums/users";
+    const userSrc = "/aum/users";
     const emptyUser = {
         "name": "",
         "email": "",
@@ -32,7 +33,7 @@ function App() {
     }
 
 
-    const roleSrc = "/aums/roles";
+    const roleSrc = "/aum/roles";
 
 
     function handleCloseModal(forceReload) {
@@ -56,9 +57,13 @@ function App() {
     }
 
     // User, Groups download and sort function
-    async function fetchData(src, setResult, comparision) {
+    async function fetchData(src, token, setResult, comparision) {
         try {
-            const response = await fetch(src);
+            const response = await fetch(src, {
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            });
             if (response.ok) {
                 const body = await response.json();
                 if (comparision) {
@@ -66,7 +71,8 @@ function App() {
                 }
                 setResult(body)
             } else {
-                console.error(src + ' not found.')
+                console.error(src + ' not found.');
+                setToken(undefined);
             }
         } catch (error) {
             console.error(error);
@@ -75,13 +81,19 @@ function App() {
 
     // Load users' data
     useEffect(() => {
-        fetchData(userSrc, setUserList, (a, b) => (a.name > b.name) ? 1 : -1);
-    }, [userSrc, reloadIfChanged]);
+        fetchData(userSrc, token, setUserList, (a, b) => (a.name > b.name) ? 1 : -1);
+    }, [userSrc, reloadIfChanged, token]);
 
     // Load roles' data
     useEffect(() => {
-        fetchData(roleSrc, setRoleList, (a, b) => (a.name > b.name) ? 1 : -1);
-    }, [roleSrc, reloadIfChanged]);
+        fetchData(roleSrc, token, setRoleList, (a, b) => (a.name > b.name) ? 1 : -1);
+    }, [roleSrc, reloadIfChanged, token]);
+
+    if (token === undefined) {
+        return (
+            <Login setTokenFunction={setToken} />
+        )
+    }
 
     // Loading... message before data arrived
     if (userList === undefined || roleList === undefined) {
@@ -89,6 +101,8 @@ function App() {
             <p>Loading...</p>
         )
     }
+
+
 
     return (
         <Fragment>
@@ -106,7 +120,7 @@ function App() {
                 <Card>
                     <Card.Header>Roles</Card.Header>
                     <Card.Body>
-                    <URList data={roleList} valListAccessor="users" onElementClick={onRoleClick} />
+                        <URList data={roleList} valListAccessor="users" onElementClick={onRoleClick} />
                         <Card.Link href="#" onClick={() => { onRoleClick(emptyRole) }}>Add new role</Card.Link>
                     </Card.Body>
                 </Card>
@@ -118,7 +132,7 @@ function App() {
                     <Modal.Title>{(selectedUser && selectedUser.name) ? 'Modify user ' + selectedUser.name : 'Create new user'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <UserForm content={selectedUser} roles={roleList} onClose={handleCloseModal} />
+                    <UserForm content={selectedUser} roles={roleList} token={token} onClose={handleCloseModal} />
                 </Modal.Body>
             </Modal>
 
@@ -127,7 +141,7 @@ function App() {
                     <Modal.Title>{(selectedRole && selectedRole.name) ? 'Modify role ' + selectedRole.name : 'Create new role'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <RoleForm content={selectedRole} users={userList} onClose={handleCloseModal} />
+                    <RoleForm content={selectedRole} users={userList} token={token} onClose={handleCloseModal} />
                 </Modal.Body>
             </Modal>
 

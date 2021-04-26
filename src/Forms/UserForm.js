@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import SelectableList from '../SelectableList';
 import { Button, Form } from "react-bootstrap";
 
-function UserForm({ content, roles, onClose }) {
+function UserForm({ content, roles, token, onClose }) {
 
     const [form, setForm] = useState({ ...content, "oldName": content.name });
     const [deleteUser, setDeleteUser] = useState(false);
@@ -35,9 +35,10 @@ function UserForm({ content, roles, onClose }) {
 
         const update = (userData.oldName !== "");
 
-        await fetch('/aums/user' + (update ? '/' + userData.oldName : ''), {
+        await fetch('/aum/user' + (update ? '/' + userData.oldName : ''), {
             method: (update) ? (deleteUser) ? 'DELETE' : 'PUT' : 'POST',
             headers: {
+                'Authorization': 'Bearer ' + token,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
